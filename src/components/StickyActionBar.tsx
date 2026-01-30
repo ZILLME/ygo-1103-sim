@@ -7,9 +7,11 @@ interface StickyActionBarProps {
   state: GameState;
   onStateChange: (newState: GameState) => void;
   onAction: (action: string) => void;
+  onShowXyzModal?: (player: 'me' | 'opp') => void;
+  onShowSynchroModal?: (player: 'me' | 'opp') => void;
 }
 
-export default function StickyActionBar({ state, onStateChange, onAction }: StickyActionBarProps) {
+export default function StickyActionBar({ state, onStateChange, onAction, onShowXyzModal, onShowSynchroModal }: StickyActionBarProps) {
   const player = state.activePlayer;
   const playerState = state[player];
   
@@ -247,6 +249,44 @@ export default function StickyActionBar({ state, onStateChange, onAction }: Stic
           }}
         >
           手札へ
+        </button>
+      )}
+
+      {/* エクシーズ召喚 */}
+      {onShowXyzModal && (
+        <button
+          onClick={() => onShowXyzModal(player)}
+          style={{
+            padding: '8px 12px',
+            background: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 'bold',
+          }}
+        >
+          エクシーズ召喚
+        </button>
+      )}
+
+      {/* シンクロ召喚 */}
+      {onShowSynchroModal && (
+        <button
+          onClick={() => onShowSynchroModal(player)}
+          style={{
+            padding: '8px 12px',
+            background: '#00bcd4',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 'bold',
+          }}
+        >
+          シンクロ召喚
         </button>
       )}
 

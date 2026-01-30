@@ -8,13 +8,19 @@ export interface ZoneCard extends DeckCard {
   setTurn?: number; // セットしたターン（罠用）
 }
 
+// エクシーズ素材（MZインデックスに紐付く）
+export interface XyzMaterials {
+  [monsterZoneIndex: number]: ZoneCard[]; // そのMZのエクシーズモンスターの素材
+}
+
 // ゾーン定義
 export interface Zones {
   monsterZones: (ZoneCard | null)[]; // 5つのモンスターゾーン
   spellTrapZones: (ZoneCard | null)[]; // 5つの魔法罠ゾーン
   graveyard: ZoneCard[];
   banished: ZoneCard[];
-  extraDeck: ZoneCard[]; // エクストラデッキ
+  extraDeck: ZoneCard[]; // エクストラデッキ（非推奨、PlayerState.extraDeckを使用）
+  xyzMaterials: XyzMaterials; // エクシーズ素材
 }
 
 // 空のゾーンを作成
@@ -25,6 +31,7 @@ export function createEmptyZones(): Zones {
     graveyard: [],
     banished: [],
     extraDeck: [],
+    xyzMaterials: {},
   };
 }
 

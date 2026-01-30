@@ -40,7 +40,13 @@ export interface GameState {
   seed: number;
 }
 
-export function createInitialState(deck: DeckCard[], seed: number = Date.now(), opponentDeck?: DeckCard[]): GameState {
+export function createInitialState(
+  deck: DeckCard[],
+  seed: number = Date.now(),
+  opponentDeck?: DeckCard[],
+  myExtraDeck?: DeckCard[],
+  opponentExtraDeck?: DeckCard[]
+): GameState {
   return {
     // 後方互換性
     deck: [...deck],
@@ -51,8 +57,8 @@ export function createInitialState(deck: DeckCard[], seed: number = Date.now(), 
     strongHumbleLock: false,
     
     // 新しい構造
-    me: createEmptyPlayerState(deck),
-    opp: createEmptyPlayerState(opponentDeck || []),
+    me: createEmptyPlayerState(deck, myExtraDeck || []),
+    opp: createEmptyPlayerState(opponentDeck || [], opponentExtraDeck || []),
     activePlayer: 'me',
     phase: 'DP',
     turn: 1,

@@ -28,6 +28,10 @@ import StickyActionBar from './components/StickyActionBar';
 import GlossaryImportExport from './components/GlossaryImportExport';
 import DeckTopPeek from './components/DeckTopPeek';
 import DeckSearchModal from './components/DeckSearchModal';
+import ExtraDeckInput from './components/ExtraDeckInput';
+import ExtraDeckPanel from './components/ExtraDeckPanel';
+import SummonXyzModal from './components/SummonXyzModal';
+import SummonSynchroModal from './components/SummonSynchroModal';
 import { moveCard } from './lib/moveCard';
 import {
   canActivateRescueRabbit,
@@ -56,6 +60,10 @@ export default function App() {
   const [drawCount, setDrawCount] = useState<number>(1);
   const [showDeckSearch, setShowDeckSearch] = useState<{ player: Player } | null>(null);
   const [needsShuffle, setNeedsShuffle] = useState<{ player: Player } | null>(null);
+  const [myExtraDeckCards, setMyExtraDeckCards] = useState<DeckCard[]>([]);
+  const [opponentExtraDeckCards, setOpponentExtraDeckCards] = useState<DeckCard[]>([]);
+  const [showXyzModal, setShowXyzModal] = useState<{ player: Player } | null>(null);
+  const [showSynchroModal, setShowSynchroModal] = useState<{ player: Player } | null>(null);
 
   // localStorageからデッキ入力を復元
   useEffect(() => {
@@ -118,7 +126,13 @@ export default function App() {
     const opponentShuffled = opponentDeckCards.length > 0 
       ? shuffleDeck([...opponentDeckCards], seed + 1) 
       : undefined;
-    const newState = createInitialState(shuffled, seed, opponentShuffled);
+    const myExtraShuffled = myExtraDeckCards.length > 0
+      ? shuffleDeck([...myExtraDeckCards], seed + 2)
+      : undefined;
+    const oppExtraShuffled = opponentExtraDeckCards.length > 0
+      ? shuffleDeck([...opponentExtraDeckCards], seed + 3)
+      : undefined;
+    const newState = createInitialState(shuffled, seed, opponentShuffled, myExtraShuffled, oppExtraShuffled);
     
     // Setup未完了状態にする（SetupPanelを表示）
     setState(newState);
@@ -1353,6 +1367,26 @@ export default function App() {
             {state && (
               <LogPanel state={state} />
             )}
+
+            {/* エクストラデッキ入力 */}
+            <ExtraDeckInput
+              player="me"
+              onDeckChange={setMyExtraDeckCards}
+              initialDeck={myExtraDeckCards}
+            />
+            <ExtraDeckInput
+              player="opp"
+              onDeckChange={setOpponentExtraDeckCards}
+              initialDeck={opponentExtraDeckCards}
+            />
+
+            {/* エクストラデッキ表示 */}
+            {state && (
+              <>
+                <ExtraDeckPanel state={state} player="me" />
+                <ExtraDeckPanel state={state} player="opp" />
+              </>
+            )}
           </div>
         </div>
 
@@ -1391,6 +1425,28 @@ export default function App() {
           state={state}
           onStateChange={setState}
           onAction={handleAction}
+          onShowXyzModal={(player) => setShowXyzModal({ player })}
+          onShowSynchroModal={(player) => setShowSynchroModal({ player })}
+        />
+      )}
+
+      {/* エクシーズ召喚モーダル */}
+      {showXyzModal && state && (
+        <SummonXyzModal
+          state={state}
+          player={showXyzModal.player}
+          onStateChange={setState}
+          onClose={() => setShowXyzModal(null)}
+        />
+      )}
+
+      {/* シンクロ召喚モーダル */}
+      {showSynchroModal && state && (
+        <SummonSynchroModal
+          state={state}
+          player={showSynchroModal.player}
+          onStateChange={setState}
+          onClose={() => setShowSynchroModal(null)}
         />
       )}
 
