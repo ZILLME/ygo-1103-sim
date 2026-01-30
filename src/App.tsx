@@ -23,6 +23,11 @@ import PhaseRing from './components/PhaseRing';
 import LogPanel from './components/LogPanel';
 import BoardDnD from './components/BoardDnD';
 import OpponentHand from './components/OpponentHand';
+import SetupPanel from './components/SetupPanel';
+import StickyActionBar from './components/StickyActionBar';
+import GlossaryImportExport from './components/GlossaryImportExport';
+import DeckTopPeek from './components/DeckTopPeek';
+import DeckSearchModal from './components/DeckSearchModal';
 import { moveCard } from './lib/moveCard';
 import {
   canActivateRescueRabbit,
@@ -49,6 +54,8 @@ export default function App() {
   const [opponentHandMode, setOpponentHandMode] = useState<'practice' | 'real'>('practice');
   const [opponentHand, setOpponentHand] = useState<DeckCard[]>([]);
   const [drawCount, setDrawCount] = useState<number>(1);
+  const [showDeckSearch, setShowDeckSearch] = useState<{ player: Player } | null>(null);
+  const [needsShuffle, setNeedsShuffle] = useState<{ player: Player } | null>(null);
 
   // localStorageからデッキ入力を復元
   useEffect(() => {
@@ -113,16 +120,26 @@ export default function App() {
       : undefined;
     const newState = createInitialState(shuffled, seed, opponentShuffled);
     
-    // 相手も初手ドロー（練習モード用）
-    if (opponentShuffled && opponentHandMode === 'practice' && newState.opp.deck.length > 0) {
-      const oppDrawResult = drawCard(newState, 'opp', 5);
-      setState(oppDrawResult.state);
-      setOpponentHand(oppDrawResult.drawn);
-    } else {
-      setOpponentHand([]);
-    }
+    // Setup未完了状態にする（SetupPanelを表示）
+    setState(newState);
+  };
+
+  const handleStartTurn = () => {
+    if (!state || !state.firstPlayer) return;
     
-    setState(addLog(newState, 'デッキをシャッフル'));
+    // 先攻プレイヤーのみDPドロー(+1)
+    const drawResult = drawCard(state, state.firstPlayer, 1);
+    let newState = drawResult.state;
+    
+    newState = {
+      ...newState,
+      isSetupComplete: true,
+      activePlayer: state.firstPlayer,
+    };
+    
+    newState = addLog(newState, `${state.firstPlayer === 'me' ? '自分' : '相手'}DP：1枚ドロー（先攻）`, state.firstPlayer);
+    
+    setState(newState);
   };
 
   const handleDrawInitial = () => {
@@ -444,11 +461,46 @@ export default function App() {
     : '0.00';
 
   return (
-    <div style={{ minHeight: '100vh', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', padding: '20px', paddingBottom: '140px' }}>
       <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
         <h1 style={{ marginBottom: '20px', fontSize: '24px', fontWeight: 'bold' }}>
           兎ラギア 1103 シミュレーター
         </h1>
+
+        {/* Setup Panel（初回） */}
+        {state && !state.firstPlayer && (
+          <SetupPanel
+            state={state}
+            onSetupComplete={(newState) => setState(newState)}
+          />
+        )}
+
+        {/* Setup完了待ち */}
+        {state && !state.isSetupComplete && state.firstPlayer && (
+          <div style={{ marginBottom: '20px', padding: '20px', background: '#fff3cd', borderRadius: '8px', border: '2px solid #ff9800' }}>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '12px' }}>
+              セットアップ完了：先攻 = {state.firstPlayer === 'me' ? '自分' : '相手'}
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              両者に初手5枚を配布しました。先攻プレイヤーのみDPドロー(+1)を実行してください。
+            </div>
+            <button
+              onClick={handleStartTurn}
+              style={{
+                padding: '12px 24px',
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+              }}
+            >
+              Start Turn（先攻DPドロー+1）
+            </button>
+          </div>
+        )}
 
         {/* 現在の手番表示 */}
         {state && (
@@ -712,6 +764,87 @@ export default function App() {
               </div>
             </div>
 
+            {/* 辞書管理 */}
+            <div style={{ padding: '20px', background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
+              <h2 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>カード辞書</h2>
+              <GlossaryImportExport />
+            </div>
+
+            {/* デッキ検索 */}
+            {state && (
+              <div style={{ padding: '20px', background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', marginBottom: '20px' }}>
+                <h2 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>デッキ検索</h2>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => setShowDeckSearch({ player: 'me' })}
+                    disabled={state.me.deck.length === 0}
+                    style={{
+                      padding: '10px 20px',
+                      background: state.me.deck.length === 0 ? '#ccc' : '#2196f3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: state.me.deck.length === 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    自分のデッキ検索
+                  </button>
+                  <button
+                    onClick={() => setShowDeckSearch({ player: 'opp' })}
+                    disabled={state.opp.deck.length === 0}
+                    style={{
+                      padding: '10px 20px',
+                      background: state.opp.deck.length === 0 ? '#ccc' : '#2196f3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: state.opp.deck.length === 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    相手のデッキ検索
+                  </button>
+                </div>
+                {needsShuffle && (
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', borderRadius: '4px', border: '2px solid #ff9800' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>
+                      ⚠️ {needsShuffle.player === 'me' ? '自分' : '相手'}のデッキ要シャッフル
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!state) return;
+                        const player = needsShuffle.player;
+                        const playerState = state[player];
+                        const seed = Date.now();
+                        const shuffled = shuffleDeck([...playerState.deck], seed);
+                        const newState = {
+                          ...state,
+                          [player]: {
+                            ...playerState,
+                            deck: shuffled,
+                          },
+                        };
+                        setState(addLog(newState, `[${player === 'me' ? '自分' : '相手'}] デッキをシャッフル`, player));
+                        setNeedsShuffle(null);
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        background: '#4caf50',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                      }}
+                    >
+                      シャッフル実行
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* エクスポート/インポート */}
             <div style={{ padding: '20px', background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
               <h2 style={{ marginBottom: '16px', fontSize: '18px', fontWeight: 'bold' }}>保存/読み込み</h2>
@@ -801,6 +934,22 @@ export default function App() {
                   右クリック: 公開/非公開 トグル
                 </div>
               </div>
+            )}
+
+            {/* デッキトップ可視化（練習モード） */}
+            {state && opponentHandMode === 'practice' && (
+              <>
+                <DeckTopPeek
+                  state={state}
+                  player="me"
+                  onStateChange={setState}
+                />
+                <DeckTopPeek
+                  state={state}
+                  player="opp"
+                  onStateChange={setState}
+                />
+              </>
             )}
 
             {/* 自分の盤面（DnD対応） */}
@@ -1235,6 +1384,26 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* 固定アクションバー */}
+      {state && state.isSetupComplete && (
+        <StickyActionBar
+          state={state}
+          onStateChange={setState}
+          onAction={handleAction}
+        />
+      )}
+
+      {/* デッキ検索モーダル */}
+      {state && showDeckSearch && (
+        <DeckSearchModal
+          state={state}
+          player={showDeckSearch.player}
+          onStateChange={setState}
+          onClose={() => setShowDeckSearch(null)}
+          onNeedsShuffle={() => setNeedsShuffle(showDeckSearch)}
+        />
+      )}
     </div>
   );
 }

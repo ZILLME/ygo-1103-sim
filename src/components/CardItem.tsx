@@ -1,5 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { Card } from '../lib/types';
+import CardPopover from './CardPopover';
 
 interface CardItemProps {
   card: Card;
@@ -56,7 +57,11 @@ export default function CardItem({ card, player, onContextMenu, onClick }: CardI
       onClick={() => onClick?.(card)}
       onContextMenu={(e) => onContextMenu?.(e, card)}
     >
-      <div style={{ fontWeight: card.selected ? 'bold' : 'normal' }}>{card.name}</div>
+      <div style={{ fontWeight: card.selected ? 'bold' : 'normal' }}>
+        <CardPopover cardName={card.name}>
+          {card.name}
+        </CardPopover>
+      </div>
       {badges.length > 0 && (
         <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
           {badges.join(' / ')}

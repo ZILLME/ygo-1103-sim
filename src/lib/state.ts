@@ -32,6 +32,8 @@ export interface GameState {
   me: PlayerState;
   opp: PlayerState;
   activePlayer: Player; // 現在の手番プレイヤー
+  firstPlayer?: Player; // 先攻プレイヤー（Setupで設定）
+  isSetupComplete?: boolean; // Setup完了フラグ
   phase: Phase;
   turn: number;
   logs: LogEntry[];
@@ -56,6 +58,7 @@ export function createInitialState(deck: DeckCard[], seed: number = Date.now(), 
     turn: 1,
     logs: [],
     seed,
+    isSetupComplete: false, // Setup未完了
   };
 }
 
